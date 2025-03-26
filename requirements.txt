@@ -6,7 +6,6 @@ pydantic-core==2.20.1
 pydantic-extra-types==2.9.0
 pydantic-settings==2.4.0
 pydantic[email]==2.8.2
-SQLAlchemy==2.0.32
 PyJWT==2.9.0
 python-jose==3.4.0
 python-multipart==0.0.8
