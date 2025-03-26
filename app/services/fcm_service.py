@@ -1,4 +1,3 @@
-import logging
 from firebase_admin import messaging, credentials
 from firebase_admin.exceptions import FirebaseError
 from typing import List, Dict, Optional
@@ -8,7 +7,6 @@ from app.config.settings import Settings
 import os
 import time
 
-logger = logging.getLogger(__name__)
 settings = Settings()
 
 class FCMService:
@@ -18,13 +16,13 @@ class FCMService:
         app = get_firebase_app()
         if app is None:
             # Try to reinitialize
-            logger.warning("Firebase app not found, attempting to reinitialize...")
+            print("Firebase app not found, attempting to reinitialize...")
             app = initialize_firebase()
 
             if app is None:
                 # Check credentials file
                 if not os.path.exists(settings.FIREBASE_CREDENTIALS_PATH):
-                    logger.error(f"Firebase credentials file not found at: {settings.FIREBASE_CREDENTIALS_PATH}")
+                    print(f"Firebase credentials file not found at: {settings.FIREBASE_CREDENTIALS_PATH}")
                     raise HTTPException(
                         status_code=503,
                         detail="Firebase credentials file not found. Please upload credentials first."
@@ -33,9 +31,9 @@ class FCMService:
                 # Try to read and validate credentials
                 try:
                     cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
-                    logger.info(f"Loaded credentials for project: {cred.project_id}")
+                    print(f"Loaded credentials for project: {cred.project_id}")
                 except Exception as e:
-                    logger.error(f"Failed to load Firebase credentials: {str(e)}")
+                    print(f"Failed to load Firebase credentials: {str(e)}")
                     raise HTTPException(
                         status_code=503,
                         detail="Invalid Firebase credentials. Please check the credentials file."
@@ -78,8 +76,8 @@ class FCMService:
             await FCMService._check_firebase()
             await FCMService._validate_token(token)
             validated_data = await FCMService._validate_data(data)
-            print("Validated data:", validated_data)
 
+            print(f"--- Preparing FCM message for token: {token[:10]}...")
             message = messaging.Message(
                 notification=messaging.Notification(
                     title=title,
@@ -88,30 +86,31 @@ class FCMService:
                 data=validated_data,
                 token=token,
             )
+            print(f"--- Sending FCM message to token: {token[:10]}...")
 
             try:
-                logger.info(f"Attempting to send FCM message to token: {token[:10]}...")
+                print(f"Attempting to send FCM message to token: {token[:10]}...")
                 result = messaging.send(message)
-                logger.info(f"Successfully sent message: {result}")
+                print(f"Successfully sent message: {result}")
                 return result
             except FirebaseError as firebase_error:
                 error_message = str(firebase_error)
                 error_dict = getattr(firebase_error, '__dict__', {})
-                logger.error(f"Firebase error: {error_message}")
-                logger.error(f"Error details: {error_dict}")
+                print(f"Firebase error: {error_message}")
+                print(f"Error details: {error_dict}")
 
                 # Get HTTP response if available
                 http_response = error_dict.get('_http_response')
                 if http_response:
-                    logger.error(f"HTTP Status: {http_response.status_code}")
-                    logger.error(f"Response body: {http_response.text}")
+                    print(f"HTTP Status: {http_response.status_code}")
+                    print(f"Response body: {http_response.text}")
 
                 if 'auth-error' in error_message.lower() or 'unauthenticated' in str(error_dict).lower():
                     # Check credentials file age
                     creds_path = settings.FIREBASE_CREDENTIALS_PATH
                     if os.path.exists(creds_path):
                         creds_age = time.time() - os.path.getmtime(creds_path)
-                        logger.warning(f"Credentials file age: {creds_age/86400:.1f} days")
+                        print(f"Credentials file age: {creds_age/86400:.1f} days")
 
                     raise HTTPException(
                         status_code=500,
@@ -142,7 +141,7 @@ class FCMService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.exception("Unexpected error while sending notification")
+            print(f"Unexpected error while sending notification: {e}")
             raise HTTPException(
                 status_code=500,
                 detail=f"Failed to send notification: {str(e)}"
