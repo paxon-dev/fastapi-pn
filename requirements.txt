@@ -18,3 +18,4 @@ requests
 phonenumbers==8.13.47
 pytz==2024.2
 apscheduler
+firebase-admin==6.5.0

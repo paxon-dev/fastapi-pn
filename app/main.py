@@ -3,10 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config.settings import Settings
 from app.api.api import api_router
+from app.config.firebase import initialize_firebase
 
 settings = Settings()
 
+# Create FastAPI app
 app = FastAPI(title=settings.APP_NAME)
+
+# Try to initialize Firebase (but don't fail if credentials aren't present)
+initialize_firebase()
 
 # Add CORS middleware
 app.add_middleware(

@@ -1,6 +1,7 @@
 from pydantic import field_validator, ConfigDict
 from pydantic_settings import BaseSettings
 from typing import Union, List
+import os
 
 class Settings(BaseSettings):
     # Application settings
@@ -9,6 +10,12 @@ class Settings(BaseSettings):
     # CORS settings
     CORS_ORIGINS: list[str]
 
+    # Firebase settings
+    FIREBASE_CREDENTIALS_PATH: str = "firebase-credentials.json"
+
+    @field_validator("FIREBASE_CREDENTIALS_PATH")
+    def validate_firebase_path(cls, v: str) -> str:
+        return os.path.abspath(v)
 
     @field_validator("CORS_ORIGINS")
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
