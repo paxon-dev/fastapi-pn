@@ -1,11 +1,14 @@
-from firebase_admin import messaging, credentials
-from firebase_admin.exceptions import FirebaseError
 from typing import List, Dict, Optional
-from fastapi import HTTPException
-from app.config.firebase import get_firebase_app, initialize_firebase
-from app.config.settings import Settings
 import os
 import time
+
+from fastapi import HTTPException
+from firebase_admin import messaging, credentials
+from firebase_admin.exceptions import FirebaseError
+from app.config.firebase import get_firebase_app, initialize_firebase
+from app.config.settings import Settings
+from google.oauth2 import service_account
+import google.auth.transport.requests
 
 settings = Settings()
 
@@ -185,3 +188,15 @@ class FCMService:
                 status_code=500,
                 detail=f"Failed to send multicast notification: {str(e)}"
             )
+
+    @staticmethod
+    def get_bearer_token():
+        """
+        Get a Firebase Bearer token using the service account file from settings.
+        """
+        SCOPES = ["https://www.googleapis.com/auth/firebase.messaging"]
+        credentials = service_account.Credentials.from_service_account_file(
+            settings.FIREBASE_CREDENTIALS_PATH, scopes=SCOPES)
+        request = google.auth.transport.requests.Request()
+        credentials.refresh(request)
+        return credentials.token

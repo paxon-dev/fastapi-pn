@@ -1,8 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Optional
 from app.services.fcm_service import FCMService
 from firebase_admin import messaging
+import google.auth.transport.requests
+from google.oauth2 import service_account
 
 router = APIRouter()
 
@@ -121,3 +123,15 @@ async def send_topic_notification(
         return {"message_id": result, "success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/get-bearer-token", summary="Get Firebase Bearer Token", response_description="Bearer token if successful")
+async def get_bearer_token_api():
+    """
+    Get a Firebase Bearer token using the service account file from settings.
+    """
+    try:
+        token = FCMService.get_bearer_token()
+        return {"access_token": token, "token_type": "Bearer"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
