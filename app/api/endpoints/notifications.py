@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Optional
 from app.services.fcm_service import FCMService
 from firebase_admin import messaging
@@ -11,7 +11,8 @@ class NotificationBase(BaseModel):
     body: str = Field(..., min_length=1, max_length=1000, description="Notification body")
     data: Optional[Dict] = Field(default=None, description="Additional data payload")
 
-    @validator('data')
+    @field_validator('data')
+    @classmethod
     def validate_data(cls, v):
         if v is not None:
             # Check if all values are convertible to strings
@@ -27,7 +28,8 @@ class SingleNotificationRequest(NotificationBase):
 class MulticastNotificationRequest(NotificationBase):
     tokens: List[str] = Field(..., min_items=1, max_items=500, description="List of FCM device tokens")
 
-    @validator('tokens')
+    @field_validator('tokens')
+    @classmethod
     def validate_tokens(cls, v):
         if not all(token.strip() for token in v):
             raise ValueError("All tokens must be non-empty strings")
